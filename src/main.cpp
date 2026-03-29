@@ -11,6 +11,7 @@ namespace fs = std::filesystem;
 int c_exit(std::string args);
 int c_echo(std::string args);
 int c_type(std::string args);
+int c_pwd(std::string args);
 
 // builtins store
 std::map<std::string, std::function<int(std::string)>> builtins = {
@@ -76,6 +77,11 @@ int c_exit(std::string args) { return -1; }
 
 int c_echo(std::string args) {
   std::cout << args << '\n';
+  return 0;
+}
+
+int c_pwd(std::string arg){
+  std::cout << fs::current_path() << '\n';
   return 0;
 }
 
