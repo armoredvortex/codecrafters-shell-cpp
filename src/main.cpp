@@ -12,13 +12,13 @@ int c_exit(std::string args);
 int c_echo(std::string args);
 int c_type(std::string args);
 
-// commands store
-std::map<std::string, std::function<int(std::string)>> commands = {
+// builtins store
+std::map<std::string, std::function<int(std::string)>> builtins = {
     {"echo", c_echo}, {"exit", c_exit}, {"type", c_type}};
 
 // utils
 bool isValidCommand(std::string command) {
-  return (commands.find(command) != commands.end());
+  return (builtins.find(command) != builtins.end());
 }
 
 bool isExecutable(const std::string& path_str) {
@@ -61,9 +61,9 @@ std::string findOnPath(std::string args) {
   return "";
 }
 
-// commands
+// builtins
 int c_type(std::string args) {
-  if (commands.find(args) != commands.end()) {
+  if (builtins.find(args) != builtins.end()) {
     std::cout << args << " is a shell builtin\n";
   } else if (findOnPath(args).size() != 0) {
     std::cout << args << " is " << findOnPath(args);
@@ -98,9 +98,11 @@ int main() {
     }
 
     if (isValidCommand(cmd)) {
-      if (commands[cmd](args) == -1) {
+      if (builtins[cmd](args) == -1) {
         return 0;
       };
+    } else if(findOnPath(cmd).size()){
+      std::system(command.c_str());
     } else {
       std::cout << command << ": command not found\n";
     }
