@@ -1,36 +1,82 @@
-#include <iostream>
-#include <string>
+#include <cstdlib>
+#include <filesystem>
 #include <functional>
+#include <iostream>
 #include <map>
+#include <sstream>
+#include <string>
 
-int c_exit(std::string args){
-  return -1;
-}
+namespace fs = std::filesystem;
 
-int c_echo(std::string args){
-  std::cout << args << '\n';
-  return 0;
-}
-
+int c_exit(std::string args);
+int c_echo(std::string args);
 int c_type(std::string args);
 
+// commands store
 std::map<std::string, std::function<int(std::string)>> commands = {
-  {"echo", c_echo},
-  {"exit", c_exit},
-  {"type", c_type}
-};
+    {"echo", c_echo}, {"exit", c_exit}, {"type", c_type}};
 
-int c_type(std::string args){
-  if(commands.find(args) != commands.end()){
+// utils
+bool isValidCommand(std::string command) {
+  return (commands.find(command) != commands.end());
+}
+
+bool isExecutable(const std::string& path_str) {
+    fs::path p(path_str);
+    std::error_code ec;
+    fs::file_status s = fs::status(p, ec);
+
+    if (ec) {
+      return false;
+    }
+
+    // Check if the file has execute permissions for the owner, group, or others
+    fs::perms perms = s.permissions();
+    
+    bool executable = 
+        ((perms & fs::perms::owner_exec) != fs::perms::none) ||
+        ((perms & fs::perms::group_exec) != fs::perms::none) ||
+        ((perms & fs::perms::others_exec) != fs::perms::none);
+
+    // Note: On Windows, the concept of an "executable permission" doesn't exist 
+    // in the same way as Unix. The library might check if it's a file type 
+    // that the OS considers runnable (e.g., .exe, .bat, .cmd).
+    
+    return executable;
+}
+
+std::string findOnPath(std::string args) {
+  std::string path = std::getenv("PATH");
+  // std::cerr << "PATH: " << path << '\n';
+
+  std::string token;
+  std::stringstream ss(path);
+
+  while (std::getline(ss, token, ':')) {
+    if(isExecutable(token + '/' + args)){
+      return token + '/' + args + '\n';
+    }
+  }
+
+  return "";
+}
+
+// commands
+int c_type(std::string args) {
+  if (commands.find(args) != commands.end()) {
     std::cout << args << " is a shell builtin\n";
+  } else if (findOnPath(args).size() != 0) {
+    std::cout << args << " is " << findOnPath(args);
   } else {
     std::cout << args << ": not found\n";
   }
   return 0;
 }
+int c_exit(std::string args) { return -1; }
 
-bool isValidCommand(std::string command){
-  return (commands.find(command) != commands.end());
+int c_echo(std::string args) {
+  std::cout << args << '\n';
+  return 0;
 }
 
 int main() {
@@ -39,19 +85,20 @@ int main() {
   std::cerr << std::unitbuf;
 
   // TODO: Uncomment the code below to pass the first stage
-  while(true){
+  while (true) {
     std::cout << "$ ";
     std::string command;
     std::getline(std::cin, command);
-    
+
     std::string cmd = command.substr(0, command.find(' '));
     std::string args;
-    if (command.find(' ') != std::string::npos){
-      args = command.substr(command.find(' ')+1, command.size() - command.find(' ')-1);
+    if (command.find(' ') != std::string::npos) {
+      args = command.substr(command.find(' ') + 1,
+                            command.size() - command.find(' ') - 1);
     }
 
-    if(isValidCommand(cmd)){
-      if(commands[cmd](args) == -1){
+    if (isValidCommand(cmd)) {
+      if (commands[cmd](args) == -1) {
         return 0;
       };
     } else {
