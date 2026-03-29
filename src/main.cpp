@@ -81,7 +81,7 @@ int c_echo(std::string args) {
 }
 
 int c_pwd(std::string arg){
-  std::cout << fs::current_path() << '\n';
+  std::cout << fs::current_path().c_str() << '\n';
   return 0;
 }
 
