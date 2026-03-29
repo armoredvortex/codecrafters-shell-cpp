@@ -12,10 +12,27 @@ int c_echo(std::string args){
   return 0;
 }
 
+int c_notfound(std::string args){
+  std::cout << args << ": command not found\n";
+  return 0;
+}
+
+int c_type(std::string args);
+
 std::map<std::string, std::function<int(std::string)>> commands = {
   {"echo", c_echo},
-  {"exit", c_exit}
+  {"exit", c_exit},
+  {"type", c_type}
 };
+
+int c_type(std::string args){
+  if(commands.find(args) != commands.end()){
+    std::cout << args << " is a shell builtin\n";
+  } else {
+    c_notfound(args);
+  }
+  return 0;
+}
 
 bool isValidCommand(std::string command){
   return (commands.find(command) != commands.end());
@@ -43,7 +60,7 @@ int main() {
         return 0;
       };
     } else {
-      std::cout << command << ": command not found\n";
+      c_notfound(cmd);
     }
   }
 }
