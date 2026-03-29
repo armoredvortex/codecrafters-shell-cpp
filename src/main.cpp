@@ -15,7 +15,7 @@ int c_pwd(std::string args);
 
 // builtins store
 std::map<std::string, std::function<int(std::string)>> builtins = {
-    {"echo", c_echo}, {"exit", c_exit}, {"type", c_type}};
+    {"echo", c_echo}, {"exit", c_exit}, {"type", c_type}, {"pwd", c_pwd}};
 
 // utils
 bool isValidCommand(std::string command) {
