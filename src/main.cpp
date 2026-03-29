@@ -12,11 +12,6 @@ int c_echo(std::string args){
   return 0;
 }
 
-int c_notfound(std::string args){
-  std::cout << args << ": command not found\n";
-  return 0;
-}
-
 int c_type(std::string args);
 
 std::map<std::string, std::function<int(std::string)>> commands = {
@@ -29,7 +24,7 @@ int c_type(std::string args){
   if(commands.find(args) != commands.end()){
     std::cout << args << " is a shell builtin\n";
   } else {
-    c_notfound(args);
+    std::cout << args << ": not found\n";
   }
   return 0;
 }
@@ -60,7 +55,7 @@ int main() {
         return 0;
       };
     } else {
-      c_notfound(cmd);
+      std::cout << command << ": command not found\n";
     }
   }
 }
