@@ -6,7 +6,6 @@
 #include <iostream>
 #include <map>
 #include <ostream>
-#include <set>
 #include <sstream>
 #include <string>
 #include <termios.h>
@@ -86,6 +85,19 @@ void matchOnPath(std::string args, std::vector<std::string> &completions) {
           completions.push_back(bin);
         }
       }
+    }
+  }
+}
+
+void matchFilename(std::string arg, std::vector<std::string> &completions) {
+  for (const auto &entry : fs::directory_iterator(fs::current_path())) {
+
+    size_t lastPos = entry.path().string().rfind('/');
+    std::string bin = entry.path().string().substr(lastPos + 1);
+
+    if (bin.substr(0, arg.size()) == arg &&
+        builtins.find(bin) == builtins.end()) {
+      completions.push_back(bin);
     }
   }
 }
@@ -205,31 +217,52 @@ int main() {
         std::cout << '\n' << std::flush;
         break;
       } else if (ch == '\t') {
+        bool searchForBuiltins = true;
+        bool searchOnPath = true;
+        bool filenameCompletion = true;
+
+        std::string lastToken = command.substr(command.find_last_of(' ') + 1);
+
+        if (command.find(' ') != command.npos) {
+          searchForBuiltins = false;
+          searchOnPath = false;
+        }
+
         std::vector<std::string> possible_completions;
-        for (auto e : builtins) {
-          if (e.first.substr(0, command.size()) == command) {
-            possible_completions.push_back(e.first);
+
+        if (searchForBuiltins) {
+          for (auto e : builtins) {
+            if (e.first.substr(0, command.size()) == command) {
+              possible_completions.push_back(e.first);
+            }
           }
         }
 
-        matchOnPath(command, possible_completions);
+        if (searchOnPath) {
+          matchOnPath(lastToken, possible_completions);
+        }
+
+        matchFilename(lastToken, possible_completions);
+
+        // for (auto e : possible_completions) {
+        //   std::cerr << e << '\n';
+        // }
+
         std::sort(possible_completions.begin(), possible_completions.end());
 
         if (!possible_completions.size()) {
           std::cout << '\a';
-        }
-
-        if (possible_completions.size() == 1) {
+        } else if (possible_completions.size() == 1) {
           std::string autocomplete =
-              possible_completions[0].substr(command.size());
+              possible_completions[0].substr(lastToken.size());
 
           std::cout << autocomplete << ' ';
-          command = possible_completions[0] + ' ';
+          command += autocomplete + ' ';
         } else {
 
           std::string lcp = longestCommonPrefix(possible_completions);
           // std::cerr << lcp << '\n';
-          if(lcp.size() > command.size()){
+          if (lcp.size() > command.size()) {
             std::cout << lcp.substr(command.size());
             command = lcp;
           }
