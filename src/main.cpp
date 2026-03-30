@@ -90,12 +90,24 @@ void matchOnPath(std::string args, std::vector<std::string> &completions) {
 }
 
 void matchFilename(std::string arg, std::vector<std::string> &completions) {
-  for (const auto &entry : fs::directory_iterator(fs::current_path())) {
+
+  std::string subdir;
+  if (arg.find_last_of('/') != std::string::npos) {
+    subdir = arg.substr(0, arg.find_last_of('/'));
+  }
+
+  for (const auto &entry :
+       fs::directory_iterator(fs::current_path().string() + '/' + subdir)) {
 
     size_t lastPos = entry.path().string().rfind('/');
     std::string bin = entry.path().string().substr(lastPos + 1);
+    
+    std::string token = arg;
+    if(arg.find_last_of('/') != std::string::npos){
+      token = arg.substr(arg.find_last_of('/')+1);
+    }
 
-    if (bin.substr(0, arg.size()) == arg &&
+    if (bin.substr(0, token.size()) == token &&
         builtins.find(bin) == builtins.end()) {
       completions.push_back(bin);
     }
@@ -127,7 +139,6 @@ std::string longestCommonPrefix(std::vector<std::string> &strs) {
 
 std::string findOnPath(std::string args) {
   std::string path = std::getenv("PATH");
-  // std::cerr << "PATH: " << path << '\n';
 
   std::string token;
   std::stringstream ss(path);
@@ -244,15 +255,14 @@ int main() {
 
         matchFilename(lastToken, possible_completions);
 
-        // for (auto e : possible_completions) {
-        //   std::cerr << e << '\n';
-        // }
-
         std::sort(possible_completions.begin(), possible_completions.end());
 
         if (!possible_completions.size()) {
           std::cout << '\a';
         } else if (possible_completions.size() == 1) {
+          if(command.find_last_of('/') != std::string::npos){
+            lastToken = command.substr(command.find_last_of('/')+1);
+          }
           std::string autocomplete =
               possible_completions[0].substr(lastToken.size());
 
@@ -261,7 +271,7 @@ int main() {
         } else {
 
           std::string lcp = longestCommonPrefix(possible_completions);
-          // std::cerr << lcp << '\n';
+
           if (lcp.size() > command.size()) {
             std::cout << lcp.substr(command.size());
             command = lcp;
