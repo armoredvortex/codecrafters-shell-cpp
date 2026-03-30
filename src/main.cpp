@@ -19,6 +19,7 @@ int c_echo(std::string args);
 int c_type(std::string args);
 int c_pwd(std::string args);
 int c_cd(std::string args);
+int c_history(std::string args);
 
 // builtins store
 std::map<std::string, std::function<int(std::string)>> builtins = {
@@ -26,7 +27,9 @@ std::map<std::string, std::function<int(std::string)>> builtins = {
     {"exit", c_exit},
     {"type", c_type},
     {"pwd", c_pwd},
-    {"cd", c_cd}};
+    {"cd", c_cd},
+    {"history", c_history}
+  };
 
 // utils
 void set_raw_mode(struct termios &original) {
@@ -157,6 +160,10 @@ std::string findOnPath(std::string args) {
 }
 
 // builtins
+int c_history(std::string args){
+  return 0;
+}
+
 int c_type(std::string args) {
   if (builtins.find(args) != builtins.end()) {
     std::cout << args << " is a shell builtin\n";
