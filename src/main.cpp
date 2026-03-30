@@ -101,14 +101,18 @@ void matchFilename(std::string arg, std::vector<std::string> &completions) {
 
     size_t lastPos = entry.path().string().rfind('/');
     std::string bin = entry.path().string().substr(lastPos + 1);
-    
+
     std::string token = arg;
-    if(arg.find_last_of('/') != std::string::npos){
-      token = arg.substr(arg.find_last_of('/')+1);
+    if (arg.find_last_of('/') != std::string::npos) {
+      token = arg.substr(arg.find_last_of('/') + 1);
     }
 
     if (bin.substr(0, token.size()) == token &&
         builtins.find(bin) == builtins.end()) {
+
+      if (fs::is_directory(entry.path())) {
+        bin += '/';
+      }
       completions.push_back(bin);
     }
   }
@@ -260,14 +264,20 @@ int main() {
         if (!possible_completions.size()) {
           std::cout << '\a';
         } else if (possible_completions.size() == 1) {
-          if(command.find_last_of('/') != std::string::npos){
-            lastToken = command.substr(command.find_last_of('/')+1);
+          if (command.find_last_of('/') != std::string::npos) {
+            lastToken = command.substr(command.find_last_of('/') + 1);
           }
           std::string autocomplete =
               possible_completions[0].substr(lastToken.size());
 
-          std::cout << autocomplete << ' ';
-          command += autocomplete + ' ';
+          if (autocomplete.back() == '/') {
+            std::cout << autocomplete;
+            command += autocomplete + '/';
+          } else {
+            std::cout << autocomplete << ' ';
+            command += autocomplete + ' ';
+          }
+
         } else {
 
           std::string lcp = longestCommonPrefix(possible_completions);
