@@ -281,10 +281,10 @@ int main() {
         } else {
 
           std::string lcp = longestCommonPrefix(possible_completions);
-
-          if (lcp.size() > command.size()) {
-            std::cout << lcp.substr(command.size());
-            command = lcp;
+          if (lcp.size() > lastToken.size()) {
+            std::string autocomplete = lcp.substr(lastToken.size());
+            std::cout << autocomplete;
+            command += autocomplete;
           }
 
           std::cout << '\a';
