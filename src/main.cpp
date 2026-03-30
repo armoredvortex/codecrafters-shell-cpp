@@ -14,6 +14,8 @@
 
 namespace fs = std::filesystem;
 
+std::vector<std::string> history_list;
+
 int c_exit(std::string args);
 int c_echo(std::string args);
 int c_type(std::string args);
@@ -161,6 +163,9 @@ std::string findOnPath(std::string args) {
 
 // builtins
 int c_history(std::string args){
+  for(int i=0; i<history_list.size(); i++){
+    std::cout << i+1 << "  " << history_list[i] << '\n';
+  }
   return 0;
 }
 
@@ -322,6 +327,8 @@ int main() {
         std::cout << ch << std::flush;
       }
     }
+
+    history_list.push_back(command);
 
     std::string cmd = command.substr(0, command.find(' '));
     std::string args;
