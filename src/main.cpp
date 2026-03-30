@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <cstdlib>
 #include <filesystem>
 #include <functional>
@@ -91,13 +92,16 @@ int c_pwd(std::string arg) {
 
 int c_cd(std::string arg) {
   if (arg.size() == 0) {
-    std::string base = "/home/";
-    std::string path_str = base + std::getenv("USER");
-    fs::path p(path_str);
-
-    fs::current_path(p);
-
+    fs::current_path(std::getenv("HOME"));
   } else {
+
+    std::string home_path = std::getenv("HOME");
+    size_t pos = arg.find('~');
+    while(pos != std::string::npos){
+      arg.replace(pos, 1, home_path);
+      pos = arg.find("~", pos + home_path.size());
+    }
+
     fs::path p(arg);
     fs::file_status s = fs::status(p);
 
@@ -108,7 +112,7 @@ int c_cd(std::string arg) {
 
     fs::current_path(arg);
   }
-  
+
   return 0;
 }
 
