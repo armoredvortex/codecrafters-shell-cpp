@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <climits>
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
@@ -25,13 +26,8 @@ int c_history(std::string args);
 
 // builtins store
 std::map<std::string, std::function<int(std::string)>> builtins = {
-    {"echo", c_echo},
-    {"exit", c_exit},
-    {"type", c_type},
-    {"pwd", c_pwd},
-    {"cd", c_cd},
-    {"history", c_history}
-  };
+    {"echo", c_echo}, {"exit", c_exit}, {"type", c_type},
+    {"pwd", c_pwd},   {"cd", c_cd},     {"history", c_history}};
 
 // utils
 void set_raw_mode(struct termios &original) {
@@ -162,9 +158,13 @@ std::string findOnPath(std::string args) {
 }
 
 // builtins
-int c_history(std::string args){
-  for(int i=0; i<history_list.size(); i++){
-    std::cout << i+1 << "  " << history_list[i] << '\n';
+int c_history(std::string args) {
+  int n = INT_MAX;
+  if (args.size())
+    n = std::stoi(args);
+  for (int i = std::max(0, (int) history_list.size() - n);
+       i < history_list.size(); i++) {
+    std::cout << i + 1 << "  " << history_list[i] << '\n';
   }
   return 0;
 }
