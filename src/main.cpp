@@ -149,14 +149,20 @@ int main() {
         std::cout << '\n' << std::flush;
         break;
       } else if (ch == '\t') {
+        bool flag = false;
         for(auto e: builtins){
           if(e.first.substr(0, command.size()) == command){
             std::string autocomplete = e.first.substr(command.size(), e.first.size() - command.size()) + ' ';
             std::cout << autocomplete;
             command += autocomplete;
+            flag = true;
           }
-
         }
+
+        if(!flag){
+          std::cout << '\a';
+        }
+
       } else if (ch == 127){
         if(command.size()){
           command.pop_back();
