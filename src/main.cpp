@@ -162,7 +162,7 @@ int c_history(std::string args) {
   int n = INT_MAX;
   if (args.size())
     n = std::stoi(args);
-  for (int i = std::max(0, (int) history_list.size() - n);
+  for (int i = std::max(0, (int)history_list.size() - n);
        i < history_list.size(); i++) {
     std::cout << i + 1 << "  " << history_list[i] << '\n';
   }
@@ -225,6 +225,8 @@ int main() {
   struct termios original_termios;
   tcgetattr(STDIN_FILENO, &original_termios);
   while (true) {
+    int history_idx = history_list.size();
+
     std::cout << "$ ";
     std::string command;
     // std::getline(std::cin, command);
@@ -322,6 +324,32 @@ int main() {
           command.pop_back();
           std::cout << "\b \b";
         }
+      } else if (ch == 27) {
+        char seq[2];
+        set_raw_mode(original_termios);
+        bool ok = (read(STDIN_FILENO, &seq[0], 1) > 0 &&
+                   read(STDIN_FILENO, &seq[1], 1) > 0);
+        tcsetattr(STDIN_FILENO, TCSANOW, &original_termios);
+
+        if (ok && seq[0] == '[') {
+          if (seq[1] == 'A') { // up
+            if (history_idx > 0) {
+              history_idx--;
+              command = history_list[history_idx];
+              std::cout << "\r\33[2K$ " << command << std::flush;
+            }
+          } else if (seq[1] == 'B') { // down
+            if (history_idx + 1 < (int)history_list.size()) {
+              history_idx++;
+              command = history_list[history_idx];
+            } else {
+              history_idx = history_list.size();
+              command.clear();
+            }
+            std::cout << "\r\33[2K$ " << command << std::flush;
+          }
+        }
+
       } else {
         command += ch;
         std::cout << ch << std::flush;
