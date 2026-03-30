@@ -4,8 +4,11 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <ostream>
 #include <sstream>
 #include <string>
+#include <termios.h>
+#include <unistd.h>
 
 namespace fs = std::filesystem;
 
@@ -24,6 +27,12 @@ std::map<std::string, std::function<int(std::string)>> builtins = {
     {"cd", c_cd}};
 
 // utils
+void set_raw_mode(struct termios &original) {
+  struct termios raw = original;
+  raw.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &raw);
+}
+
 bool isValidCommand(std::string command) {
   return (builtins.find(command) != builtins.end());
 }
@@ -97,7 +106,7 @@ int c_cd(std::string arg) {
 
     std::string home_path = std::getenv("HOME");
     size_t pos = arg.find('~');
-    while(pos != std::string::npos){
+    while (pos != std::string::npos) {
       arg.replace(pos, 1, home_path);
       pos = arg.find("~", pos + home_path.size());
     }
@@ -121,11 +130,43 @@ int main() {
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
 
-  // TODO: Uncomment the code below to pass the first stage
+  struct termios original_termios;
+  tcgetattr(STDIN_FILENO, &original_termios);
   while (true) {
     std::cout << "$ ";
     std::string command;
-    std::getline(std::cin, command);
+    // std::getline(std::cin, command);
+
+    char ch;
+
+    while (true) {
+      set_raw_mode(original_termios);
+      if (read(STDIN_FILENO, &ch, 1) <= 0)
+        break;
+      tcsetattr(STDIN_FILENO, TCSANOW, &original_termios);
+
+      if (ch == '\n') {
+        std::cout << '\n' << std::flush;
+        break;
+      } else if (ch == '\t') {
+        for(auto e: builtins){
+          if(e.first.substr(0, command.size()) == command){
+            std::string autocomplete = e.first.substr(command.size(), e.first.size() - command.size()) + ' ';
+            std::cout << autocomplete;
+            command += autocomplete;
+          }
+
+        }
+      } else if (ch == 127){
+        if(command.size()){
+          command.pop_back();
+          std::cout << "\b \b";
+        }
+      }else {
+        command += ch;
+        std::cout << ch << std::flush;
+      }
+    }
 
     std::string cmd = command.substr(0, command.find(' '));
     std::string args;
