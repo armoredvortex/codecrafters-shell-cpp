@@ -60,6 +60,31 @@ bool isExecutable(const std::string &path_str) {
   return executable;
 }
 
+std::string matchOnPath(std::string args) {
+  std::string path = std::getenv("PATH");
+
+  std::string token;
+  std::stringstream ss(path);
+
+  while (std::getline(ss, token, ':')) {
+    if (fs::exists(token)) {
+      for (const auto &entry : fs::directory_iterator(token)) {
+        // if(args == entry.path().string().sub)
+
+        size_t lastPos = entry.path().string().rfind('/');
+        std::string bin = entry.path().string().substr(lastPos+1);
+
+        size_t idx = bin.find(args);
+        if(idx != std::string::npos){
+          return bin.substr(idx+args.size());
+        }
+      }
+    }
+  }
+
+  return "";
+}
+
 std::string findOnPath(std::string args) {
   std::string path = std::getenv("PATH");
   // std::cerr << "PATH: " << path << '\n';
@@ -95,7 +120,7 @@ int c_echo(std::string args) {
 }
 
 int c_pwd(std::string arg) {
-  std::cout << fs::current_path().c_str() << '\n';
+  std::cout << fs::current_path().string() << '\n';
   return 0;
 }
 
@@ -150,25 +175,36 @@ int main() {
         break;
       } else if (ch == '\t') {
         bool flag = false;
-        for(auto e: builtins){
-          if(e.first.substr(0, command.size()) == command){
-            std::string autocomplete = e.first.substr(command.size(), e.first.size() - command.size()) + ' ';
+        for (auto e : builtins) {
+          if (e.first.substr(0, command.size()) == command) {
+            std::string autocomplete =
+                e.first.substr(command.size(),
+                               e.first.size() - command.size()) +
+                ' ';
             std::cout << autocomplete;
             command += autocomplete;
             flag = true;
           }
         }
 
-        if(!flag){
+        if (!flag) {
+          auto res = matchOnPath(command);
+          command += res + ' ';
+          if(res.size()){
+            std::cout << res << ' ';
+          }
+        }
+
+        if (!flag) {
           std::cout << '\a';
         }
 
-      } else if (ch == 127){
-        if(command.size()){
+      } else if (ch == 127) {
+        if (command.size()) {
           command.pop_back();
           std::cout << "\b \b";
         }
-      }else {
+      } else {
         command += ch;
         std::cout << ch << std::flush;
       }
