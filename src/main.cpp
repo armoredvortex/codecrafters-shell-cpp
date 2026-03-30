@@ -103,7 +103,7 @@ int c_cd(std::string arg) {
 
     if(!fs::exists(s)){
       std::cout << "cd: " << arg << ": No such file or directory\n";
-      return -1;
+      return 1;
     }
 
     fs::current_path(arg);
