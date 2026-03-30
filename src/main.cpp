@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
@@ -9,6 +10,7 @@
 #include <string>
 #include <termios.h>
 #include <unistd.h>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -60,7 +62,7 @@ bool isExecutable(const std::string &path_str) {
   return executable;
 }
 
-std::string matchOnPath(std::string args) {
+void matchOnPath(std::string args, std::vector<std::string> &completions) {
   std::string path = std::getenv("PATH");
 
   std::string token;
@@ -71,18 +73,19 @@ std::string matchOnPath(std::string args) {
       for (const auto &entry : fs::directory_iterator(token)) {
         // if(args == entry.path().string().sub)
 
-        size_t lastPos = entry.path().string().rfind('/');
-        std::string bin = entry.path().string().substr(lastPos+1);
+        if (!isExecutable(entry.path())) {
+          continue;
+        }
 
-        size_t idx = bin.find(args);
-        if(idx != std::string::npos){
-          return bin.substr(idx+args.size());
+        size_t lastPos = entry.path().string().rfind('/');
+        std::string bin = entry.path().string().substr(lastPos + 1);
+
+        if (bin.substr(0, args.size()) == args && builtins.find(bin) == builtins.end()) {
+          completions.push_back(bin);
         }
       }
     }
   }
-
-  return "";
 }
 
 std::string findOnPath(std::string args) {
@@ -163,40 +166,57 @@ int main() {
     // std::getline(std::cin, command);
 
     char ch;
-
+    bool dtab_flag = false;
     while (true) {
-      set_raw_mode(original_termios);
-      if (read(STDIN_FILENO, &ch, 1) <= 0)
-        break;
-      tcsetattr(STDIN_FILENO, TCSANOW, &original_termios);
+      if (!dtab_flag) {
+        set_raw_mode(original_termios);
+        if (read(STDIN_FILENO, &ch, 1) <= 0)
+          break;
+        tcsetattr(STDIN_FILENO, TCSANOW, &original_termios);
+      }
+      dtab_flag = false;
 
       if (ch == '\n') {
         std::cout << '\n' << std::flush;
         break;
       } else if (ch == '\t') {
-        bool flag = false;
+        std::vector<std::string> possible_completions;
         for (auto e : builtins) {
           if (e.first.substr(0, command.size()) == command) {
-            std::string autocomplete =
-                e.first.substr(command.size(),
-                               e.first.size() - command.size()) +
-                ' ';
-            std::cout << autocomplete;
-            command += autocomplete;
-            flag = true;
+            possible_completions.push_back(e.first);
           }
         }
 
-        if (!flag) {
-          auto res = matchOnPath(command);
-          command += res + ' ';
-          if(res.size()){
-            std::cout << res << ' ';
-          }
-        }
+        matchOnPath(command, possible_completions);
+        std::sort(possible_completions.begin(), possible_completions.end());
 
-        if (!flag) {
+        if (!possible_completions.size()) {
           std::cout << '\a';
+        }
+
+        if (possible_completions.size() == 1) {
+          std::string autocomplete =
+              possible_completions[0].substr(command.size());
+
+          std::cout << autocomplete << ' ';
+          command = possible_completions[0] + ' ';
+        } else {
+          std::cout << '\a';
+          set_raw_mode(original_termios);
+          if (read(STDIN_FILENO, &ch, 1) <= 0)
+            break;
+          tcsetattr(STDIN_FILENO, TCSANOW, &original_termios);
+
+          if (ch == '\t') {
+            std::cout << '\n';
+            for (auto e : possible_completions) {
+              std::cout << e << "  ";
+            }
+            std::cout << '\n';
+            std::cout << "$ " << command;
+          } else {
+            dtab_flag = true;
+          }
         }
 
       } else if (ch == 127) {
