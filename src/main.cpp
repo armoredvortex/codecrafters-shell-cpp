@@ -97,18 +97,18 @@ int c_cd(std::string arg) {
 
     fs::current_path(p);
 
-  } else if (arg[0] == '/') {
+  } else {
     fs::path p(arg);
     fs::file_status s = fs::status(p);
 
-    if(!fs::exists(s)){
+    if (!fs::exists(s)) {
       std::cout << "cd: " << arg << ": No such file or directory\n";
       return 1;
     }
 
     fs::current_path(arg);
   }
-
+  
   return 0;
 }
 
