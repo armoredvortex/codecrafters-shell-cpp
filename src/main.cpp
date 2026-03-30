@@ -6,6 +6,7 @@
 #include <iostream>
 #include <map>
 #include <ostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <termios.h>
@@ -80,12 +81,36 @@ void matchOnPath(std::string args, std::vector<std::string> &completions) {
         size_t lastPos = entry.path().string().rfind('/');
         std::string bin = entry.path().string().substr(lastPos + 1);
 
-        if (bin.substr(0, args.size()) == args && builtins.find(bin) == builtins.end()) {
+        if (bin.substr(0, args.size()) == args &&
+            builtins.find(bin) == builtins.end()) {
           completions.push_back(bin);
         }
       }
     }
   }
+}
+
+std::string longestCommonPrefix(std::vector<std::string> &strs) {
+  if (strs.empty()) {
+    return "";
+  }
+
+  // Iterate through each character position of the first string
+  for (int i = 0; i < strs[0].length(); ++i) {
+    char currentChar = strs[0][i];
+
+    // Compare this character across all other strings
+    for (int j = 1; j < strs.size(); ++j) {
+      // If the current string is too short or the character doesn't match
+      if (i == strs[j].length() || strs[j][i] != currentChar) {
+        // Return the common prefix found so far using substr
+        return strs[0].substr(0, i);
+      }
+    }
+  }
+
+  // If the entire first string is a common prefix for all strings
+  return strs[0];
 }
 
 std::string findOnPath(std::string args) {
@@ -201,6 +226,14 @@ int main() {
           std::cout << autocomplete << ' ';
           command = possible_completions[0] + ' ';
         } else {
+
+          std::string lcp = longestCommonPrefix(possible_completions);
+          // std::cerr << lcp << '\n';
+          if(lcp.size() > command.size()){
+            std::cout << lcp.substr(command.size());
+            command = lcp;
+          }
+
           std::cout << '\a';
           set_raw_mode(original_termios);
           if (read(STDIN_FILENO, &ch, 1) <= 0)
