@@ -12,38 +12,42 @@ int c_exit(std::string args);
 int c_echo(std::string args);
 int c_type(std::string args);
 int c_pwd(std::string args);
+int c_cd(std::string args);
 
 // builtins store
 std::map<std::string, std::function<int(std::string)>> builtins = {
-    {"echo", c_echo}, {"exit", c_exit}, {"type", c_type}, {"pwd", c_pwd}};
+    {"echo", c_echo},
+    {"exit", c_exit},
+    {"type", c_type},
+    {"pwd", c_pwd},
+    {"cd", c_cd}};
 
 // utils
 bool isValidCommand(std::string command) {
   return (builtins.find(command) != builtins.end());
 }
 
-bool isExecutable(const std::string& path_str) {
-    fs::path p(path_str);
-    std::error_code ec;
-    fs::file_status s = fs::status(p, ec);
+bool isExecutable(const std::string &path_str) {
+  fs::path p(path_str);
+  std::error_code ec;
+  fs::file_status s = fs::status(p, ec);
 
-    if (ec) {
-      return false;
-    }
+  if (ec) {
+    return false;
+  }
 
-    // Check if the file has execute permissions for the owner, group, or others
-    fs::perms perms = s.permissions();
-    
-    bool executable = 
-        ((perms & fs::perms::owner_exec) != fs::perms::none) ||
-        ((perms & fs::perms::group_exec) != fs::perms::none) ||
-        ((perms & fs::perms::others_exec) != fs::perms::none);
+  // Check if the file has execute permissions for the owner, group, or others
+  fs::perms perms = s.permissions();
 
-    // Note: On Windows, the concept of an "executable permission" doesn't exist 
-    // in the same way as Unix. The library might check if it's a file type 
-    // that the OS considers runnable (e.g., .exe, .bat, .cmd).
-    
-    return executable;
+  bool executable = ((perms & fs::perms::owner_exec) != fs::perms::none) ||
+                    ((perms & fs::perms::group_exec) != fs::perms::none) ||
+                    ((perms & fs::perms::others_exec) != fs::perms::none);
+
+  // Note: On Windows, the concept of an "executable permission" doesn't exist
+  // in the same way as Unix. The library might check if it's a file type
+  // that the OS considers runnable (e.g., .exe, .bat, .cmd).
+
+  return executable;
 }
 
 std::string findOnPath(std::string args) {
@@ -54,7 +58,7 @@ std::string findOnPath(std::string args) {
   std::stringstream ss(path);
 
   while (std::getline(ss, token, ':')) {
-    if(isExecutable(token + '/' + args)){
+    if (isExecutable(token + '/' + args)) {
       return token + '/' + args + '\n';
     }
   }
@@ -80,8 +84,31 @@ int c_echo(std::string args) {
   return 0;
 }
 
-int c_pwd(std::string arg){
+int c_pwd(std::string arg) {
   std::cout << fs::current_path().c_str() << '\n';
+  return 0;
+}
+
+int c_cd(std::string arg) {
+  if (arg.size() == 0) {
+    std::string base = "/home/";
+    std::string path_str = base + std::getenv("USER");
+    fs::path p(path_str);
+
+    fs::current_path(p);
+    
+  } else if (arg[0] == '/') {
+    fs::path p(arg);
+    fs::file_status s = fs::status(p);
+
+    if(!fs::exists(s)){
+      std::cout << "cd: " << arg << ": No such file of directory\n";
+      return -1;
+    }
+
+    fs::current_path(arg);
+  }
+
   return 0;
 }
 
@@ -107,7 +134,7 @@ int main() {
       if (builtins[cmd](args) == -1) {
         return 0;
       };
-    } else if(findOnPath(cmd).size()){
+    } else if (findOnPath(cmd).size()) {
       std::system(command.c_str());
     } else {
       std::cout << command << ": command not found\n";
