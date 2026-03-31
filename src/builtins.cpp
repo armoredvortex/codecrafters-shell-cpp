@@ -1,6 +1,7 @@
 #include "builtins.hpp"
 #include "utils.hpp"
 #include <climits>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <iterator>
@@ -74,13 +75,13 @@ int c_cd(std::string arg) {
 
 int c_jobs(std::string) {
 
-  for (auto it = running_jobs.begin(); it != running_jobs.end(); ++it) {
+  for (auto it = running_jobs.begin(); it != running_jobs.end();) {
     std::string status;
     int result = waitpid(it->second.first, nullptr, WNOHANG);
-    if (result == 0) {
-      status = "Running   ";
+    if (WIFEXITED(result)) {
+      status = "Running";
     } else {
-      status = "Terminated";
+      status = "Done";
     }
 
     std::cout << '[' << it->first << ']';
@@ -92,7 +93,15 @@ int c_jobs(std::string) {
       std::cout << ' ';
     }
     std::string procName = it->second.second;
-    std::cout << "  " << status << "\t" << procName << "\n";
+    std::cout << "  " << status << "\t\t";
+    if(status == "Done"){
+        std::cout << procName.substr(0, procName.size()-2) << '\n';
+        it = running_jobs.erase(it);
+    }
+    else {
+        std::cout << procName << '\n';
+        it++;
+    }
   }
   return 0;
 }
