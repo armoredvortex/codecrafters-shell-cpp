@@ -164,9 +164,7 @@ int main() {
     if (lastToken == "&") {
       pid = fork();
       if (pid) {
-        std::cout << '[' << job_idx << "] " << pid << '\n';
-        running_jobs[job_idx] = {pid, command};
-        
+
         int ct = 1;
         for(auto it = running_jobs.begin(); it != running_jobs.end(); it++){
           if(it->first == ct){
@@ -176,6 +174,10 @@ int main() {
           }
         }
         job_idx = ct;
+
+
+        std::cout << '[' << job_idx << "] " << pid << '\n';
+        running_jobs[job_idx] = {pid, command};
       }
       command = command.substr(0, command.find_last_of(' '));
     }
