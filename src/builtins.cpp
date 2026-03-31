@@ -15,9 +15,10 @@
 namespace fs = std::filesystem;
 
 std::vector<std::string> history_list;
+size_t history_saved_idx = 0;
 
 int c_history(std::string args) {
-  if (args.substr(0, 2) == "-r" || args.substr(0, 2) == "-w") {
+  if (args.substr(0, 2) == "-r" || args.substr(0, 2) == "-w" || args.substr(0, 2) == "-a") {
     size_t start_idx = args.find(' ');
     if (start_idx == std::string::npos || start_idx + 1 >= args.size()) {
       return 0;
@@ -39,17 +40,23 @@ int c_history(std::string args) {
         }
         history_list.push_back(line);
       }
-    } else if (args.substr(0, 2) == "-w") {
-      std::ofstream file(filename, std::ios::app);
+      history_saved_idx = history_list.size();
+    } else if (args.substr(0, 2) == "-w" || args.substr(0, 2) == "-a") {
+      std::ofstream file(
+        filename,
+        args.substr(0, 2) == "-w" ? std::ios::out : (std::ios::out | std::ios::app)
+      );
 
       if (!file.is_open()) {
         std::cerr << "history: " << filename << ": cannot open\n";
         return -11;
       }
 
-      for(auto e: history_list){
-        file << e << '\n';
+      size_t start = args.substr(0, 2) == "-a" ? history_saved_idx : 0;
+      for (size_t i = start; i < history_list.size(); i++) {
+        file << history_list[i] << '\n';
       }
+      history_saved_idx = history_list.size();
 
       file.close();
     }
