@@ -77,11 +77,16 @@ int c_jobs(std::string) {
 
   for (auto it = running_jobs.begin(); it != running_jobs.end();) {
     std::string status;
-    int result = waitpid(it->second.first, nullptr, WNOHANG);
-    if (WIFEXITED(result)) {
+    int child_status = 0;
+    pid_t result = waitpid(it->second.first, &child_status, WNOHANG);
+    if (result == 0) {
       status = "Running";
-    } else {
+    } else if (result > 0 &&
+               (WIFEXITED(child_status) || WIFSIGNALED(child_status))) {
       status = "Done";
+    } else {
+      ++it;
+      continue;
     }
 
     std::cout << '[' << it->first << ']';
@@ -94,13 +99,12 @@ int c_jobs(std::string) {
     }
     std::string procName = it->second.second;
     std::cout << "  " << status << "\t\t";
-    if(status == "Done"){
-        std::cout << procName.substr(0, procName.size()-2) << '\n';
-        it = running_jobs.erase(it);
-    }
-    else {
-        std::cout << procName << '\n';
-        it++;
+    if (status == "Done") {
+      std::cout << procName.substr(0, procName.size() - 2) << '\n';
+      it = running_jobs.erase(it);
+    } else {
+      std::cout << procName << '\n';
+      ++it;
     }
   }
   return 0;

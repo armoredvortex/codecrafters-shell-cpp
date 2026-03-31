@@ -8,6 +8,7 @@
 #include <ostream>
 #include <string>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <termios.h>
 #include <unistd.h>
 #include <vector>
@@ -17,7 +18,7 @@ std::map<std::string, std::function<int(std::string)>> builtins = {
     {"echo", c_echo}, {"exit", c_exit},       {"type", c_type}, {"pwd", c_pwd},
     {"cd", c_cd},     {"history", c_history}, {"jobs", c_jobs}};
 
-std::map<int, std::pair<int,std::string>> running_jobs;
+std::map<int, std::pair<int, std::string>> running_jobs;
 int job_idx = 1;
 
 int main() {
@@ -192,6 +193,27 @@ int main() {
 
       if (pid == 0) {
         exit(0);
+      }
+    }
+
+    for (auto it = running_jobs.begin(); it != running_jobs.end();) {
+      int status = 0;
+      pid_t result = waitpid(it->second.first, &status, WNOHANG);
+      if (result > 0 && (WIFEXITED(status) || WIFSIGNALED(status))) {
+        std::cout << '[' << it->first << ']';
+        if (std::next(it) == running_jobs.end()) {
+          std::cout << '+';
+        } else if (std::next(std::next(it)) == running_jobs.end()) {
+          std::cout << '-';
+        } else {
+          std::cout << ' ';
+        }
+        std::string procName = it->second.second;
+        std::cout << "  Done" << "\t\t";
+        std::cout << procName.substr(0, procName.size() - 2) << '\n';
+        it = running_jobs.erase(it);
+      } else {
+        ++it;
       }
     }
   }
