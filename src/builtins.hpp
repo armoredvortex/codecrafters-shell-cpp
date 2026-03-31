@@ -5,6 +5,7 @@
 
 extern std::map<std::string, std::function<int(std::string)>> builtins;
 extern std::vector<std::string> history_list;
+extern std::map<int,std::pair<int, std::string>> running_jobs;
 
 int c_exit(std::string args);
 int c_echo(std::string args);

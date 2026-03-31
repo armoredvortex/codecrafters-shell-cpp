@@ -17,7 +17,7 @@ std::map<std::string, std::function<int(std::string)>> builtins = {
     {"echo", c_echo}, {"exit", c_exit},       {"type", c_type}, {"pwd", c_pwd},
     {"cd", c_cd},     {"history", c_history}, {"jobs", c_jobs}};
 
-std::map<int, int> running_jobs;
+std::map<int, std::pair<int,std::string>> running_jobs;
 int job_idx = 1;
 
 int main() {
@@ -164,6 +164,8 @@ int main() {
       pid = fork();
       if (pid) {
         std::cout << '[' << job_idx << "] " << pid << '\n';
+        running_jobs[job_idx] = {pid, command};
+        job_idx++;
       }
       command = command.substr(0, command.find_last_of(' '));
     }
@@ -188,7 +190,7 @@ int main() {
         std::cout << command << ": command not found\n";
       }
 
-      if(pid == 0){
+      if (pid == 0) {
         return 0;
       }
     }

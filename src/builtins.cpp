@@ -1,8 +1,11 @@
 #include "builtins.hpp"
 #include "utils.hpp"
 #include <climits>
+#include <fstream>
 #include <filesystem>
 #include <iostream>
+#include <iterator>
+#include <signal.h>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -70,4 +73,24 @@ int c_cd(std::string arg) {
   return 0;
 }
 
-int c_jobs(std::string) { return 0; }
+int c_jobs(std::string) {
+
+  for (auto it = running_jobs.begin(); it != running_jobs.end(); ++it) {
+    std::string status;
+    if (kill(it->second.first, 0) == 0) {
+      status = "Running";
+    } else {
+      status = "Terminated";
+    }
+
+    std::cout << '[' << it->first << ']';
+    if (std::next(it) == running_jobs.end()) {
+      std::cout << '+';
+    } else {
+      std::cout << ' ';
+    }
+    std::string procName = it->second.second;
+    std::cout << "  " << status << "\t\t" << procName << "\n";
+  }
+  return 0;
+}
