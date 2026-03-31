@@ -17,26 +17,41 @@ namespace fs = std::filesystem;
 std::vector<std::string> history_list;
 
 int c_history(std::string args) {
-  if (args.substr(0, 2) == "-r") {
+  if (args.substr(0, 2) == "-r" || args.substr(0, 2) == "-w") {
     size_t start_idx = args.find(' ');
     if (start_idx == std::string::npos || start_idx + 1 >= args.size()) {
       return 0;
     }
 
     std::string filename = args.substr(start_idx + 1);
-    std::ifstream file(filename);
 
-    if (!file.is_open()) {
-      std::cerr << "history: " << filename << ": cannot open\n";
-      return 1;
-    }
+    if (args.substr(0, 2) == "-r") {
+      std::ifstream file(filename);
 
-    std::string line;
-    while (std::getline(file, line)) {
-      if (!line.empty() && line.back() == '\r') {
-        line.pop_back();
+      if (!file.is_open()) {
+        std::cerr << "history: " << filename << ": cannot open\n";
+        return -11;
       }
-      history_list.push_back(line);
+      std::string line;
+      while (std::getline(file, line)) {
+        if (!line.empty() && line.back() == '\r') {
+          line.pop_back();
+        }
+        history_list.push_back(line);
+      }
+    } else if (args.substr(0, 2) == "-w") {
+      std::ofstream file(filename, std::ios::app);
+
+      if (!file.is_open()) {
+        std::cerr << "history: " << filename << ": cannot open\n";
+        return -11;
+      }
+
+      for(auto e: history_list){
+        file << e << '\n';
+      }
+
+      file.close();
     }
 
   } else {
