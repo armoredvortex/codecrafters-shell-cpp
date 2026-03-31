@@ -191,7 +191,7 @@ int main() {
       }
 
       if (pid == 0) {
-        return 0;
+        exit(0);
       }
     }
   }
