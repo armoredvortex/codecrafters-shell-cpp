@@ -28,6 +28,8 @@ int main() {
 
   struct termios original_termios;
   tcgetattr(STDIN_FILENO, &original_termios);
+
+  builtins["history"]((std::string)"-r " + std::getenv("HISFILE"));
   while (true) {
     int history_idx = history_list.size();
 
