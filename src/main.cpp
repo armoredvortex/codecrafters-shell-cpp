@@ -166,7 +166,16 @@ int main() {
       if (pid) {
         std::cout << '[' << job_idx << "] " << pid << '\n';
         running_jobs[job_idx] = {pid, command};
-        job_idx++;
+        
+        int ct = 1;
+        for(auto it = running_jobs.begin(); it != running_jobs.end(); it++){
+          if(it->first == ct){
+            ct++;
+          } else {
+            break;
+          }
+        }
+        job_idx = ct;
       }
       command = command.substr(0, command.find_last_of(' '));
     }
