@@ -7,6 +7,7 @@
 #include <map>
 #include <ostream>
 #include <string>
+#include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
 #include <vector>
@@ -15,6 +16,9 @@
 std::map<std::string, std::function<int(std::string)>> builtins = {
     {"echo", c_echo}, {"exit", c_exit},       {"type", c_type}, {"pwd", c_pwd},
     {"cd", c_cd},     {"history", c_history}, {"jobs", c_jobs}};
+
+std::map<int, int> running_jobs;
+int job_idx = 1;
 
 int main() {
   // Flush after every std::cout / std:cerr
@@ -154,24 +158,39 @@ int main() {
         std::cout << ch << std::flush;
       }
     }
-
-    history_list.push_back(command);
-
-    std::string cmd = command.substr(0, command.find(' '));
-    std::string args;
-    if (command.find(' ') != std::string::npos) {
-      args = command.substr(command.find(' ') + 1,
-                            command.size() - command.find(' ') - 1);
+    std::string lastToken = command.substr(command.find_last_of(' ') + 1);
+    pid_t pid = -1;
+    if (lastToken == "&") {
+      pid = fork();
+      if (pid) {
+        std::cout << '[' << job_idx << "] " << pid << '\n';
+      }
+      command = command.substr(0, command.find_last_of(' '));
     }
 
-    if (isValidCommand(cmd)) {
-      if (builtins[cmd](args) == -1) {
+    if (pid == -1 || pid == 0) {
+      history_list.push_back(command);
+
+      std::string cmd = command.substr(0, command.find(' '));
+      std::string args;
+      if (command.find(' ') != std::string::npos) {
+        args = command.substr(command.find(' ') + 1,
+                              command.size() - command.find(' ') - 1);
+      }
+
+      if (isValidCommand(cmd)) {
+        if (builtins[cmd](args) == -1) {
+          return 0;
+        };
+      } else if (findOnPath(cmd).size()) {
+        std::system(command.c_str());
+      } else {
+        std::cout << command << ": command not found\n";
+      }
+
+      if(pid == 0){
         return 0;
-      };
-    } else if (findOnPath(cmd).size()) {
-      std::system(command.c_str());
-    } else {
-      std::cout << command << ": command not found\n";
+      }
     }
   }
 }
