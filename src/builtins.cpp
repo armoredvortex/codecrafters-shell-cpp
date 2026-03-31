@@ -3,6 +3,8 @@
 #include <climits>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -15,12 +17,36 @@ namespace fs = std::filesystem;
 std::vector<std::string> history_list;
 
 int c_history(std::string args) {
-  int n = INT_MAX;
-  if (args.size())
-    n = std::stoi(args);
-  for (int i = std::max(0, (int)history_list.size() - n);
-       i < history_list.size(); i++) {
-    std::cout << i + 1 << "  " << history_list[i] << '\n';
+  if (args.substr(0, 2) == "-r") {
+    size_t start_idx = args.find(' ');
+    if (start_idx == std::string::npos || start_idx + 1 >= args.size()) {
+      return 0;
+    }
+
+    std::string filename = args.substr(start_idx + 1);
+    std::ifstream file(filename);
+
+    if (!file.is_open()) {
+      std::cerr << "history: " << filename << ": cannot open\n";
+      return 1;
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+      if (!line.empty() && line.back() == '\r') {
+        line.pop_back();
+      }
+      history_list.push_back(line);
+    }
+
+  } else {
+    int n = INT_MAX;
+    if (args.size())
+      n = std::stoi(args);
+    for (int i = std::max(0, (int)history_list.size() - n);
+         i < history_list.size(); i++) {
+      std::cout << std::setw(5) << i + 1 << "  " << history_list[i] << '\n';
+    }
   }
   return 0;
 }
