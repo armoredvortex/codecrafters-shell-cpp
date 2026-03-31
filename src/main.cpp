@@ -29,7 +29,10 @@ int main() {
   struct termios original_termios;
   tcgetattr(STDIN_FILENO, &original_termios);
 
-  builtins["history"]((std::string)"-r " + std::getenv("HISFILE"));
+  const char *history_file = std::getenv("HISTFILE");
+  if (history_file) {
+    builtins["history"]((std::string)"-r " + history_file);
+  }
   while (true) {
     int history_idx = history_list.size();
 
@@ -196,6 +199,9 @@ int main() {
 
       if (isValidCommand(cmd)) {
         if (builtins[cmd](args) == -1) {
+          if (history_file) {
+            builtins["history"]((std::string)"-w " + history_file);
+          }
           return 0;
         };
       } else if (findOnPath(cmd).size()) {

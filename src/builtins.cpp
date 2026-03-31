@@ -38,6 +38,9 @@ int c_history(std::string args) {
         if (!line.empty() && line.back() == '\r') {
           line.pop_back();
         }
+        if (line.empty()) {
+          continue;
+        }
         history_list.push_back(line);
       }
       history_saved_idx = history_list.size();
